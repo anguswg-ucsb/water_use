@@ -33,6 +33,7 @@ source('utils.R')
 # output$conusMap     <- renderLeaflet({ basemap() })
 
 state_lst <- as.list(state.name)
+counties <- USAboundaries::us_counties()
 
 # output$countyMap <- renderLeaflet({ pop_map(pop) })
 
@@ -53,17 +54,27 @@ dateRangeInput("dateTS", label = "Date Range Input",
                max = "2018-12-31",
                format = "yyyy mm dd",
                weekstart = 1)
-uiOutput("stateSelector")
+uiOutput("stateSelect")
+uiOutput("countySelect")
 
 ```
 
 ```{r context="server"}
-output$stateSelector <- renderUI({
+output$stateSelect <- renderUI({
    selectInput("stateSearch", "Choose state:",
-               as.list(state_lst),
+               as.list(unique(counties$state_name)),
                multiple= FALSE,
                selectize = TRUE)
 })
+output$countySelect <- renderUI({
+   selectInput("countySearch", "Choose county:",
+               choices = NULL,
+               multiple= FALSE,
+               selectize = TRUE)
+})
+
+
+
 ```
 
 ### **Submit**
@@ -75,17 +86,33 @@ Row
 -----------------------------------------------
 ```{r}
 verbatimTextOutput("stateText")
+
+verbatimTextOutput("countyText")
 ```
 
 ```{r context="server"}
 stateName <- eventReactive(input$submitButton, {
-    paste0("state: ", input$stateSearch)
+    filter(counties, state_name == input$stateSearch)
   })
+# state <- reactive({
+#   filter(counties, state_name == input$stateSearch)
+# })
 
-output$stateText <- renderText({
+observeEvent(stateName(), {
+  choices <- stateName()$name
+  updateSelectInput(session, inputId = "countySearch", choices = choices) 
+})
+output$stateText <- renderPrint({
    stateName()
   })
 
+countyName <- eventReactive(input$submitButton, {
+    input$countySearch
+  })
+
+output$countyText <- renderPrint({
+   countyName()
+  })
 ```
 
 
