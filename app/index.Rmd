@@ -1,0 +1,101 @@
+---
+title: "Water use"
+runtime: shiny
+output: 
+  flexdashboard::flex_dashboard:
+    navbar:
+      - { icon: "fa-question-circle", href: "https://github.com/anguswg-ucsb/water_use", align: right }
+    theme: flatly
+    orientation: rows
+    source_code: embed
+    vertical_layout: fill
+---
+
+
+```{r setup, include = FALSE}
+library(shiny)
+library(flexdashboard)
+library(shinyWidgets)
+
+library(dplyr)
+library(tidyr)
+library(dataRetrieval)
+
+library(DT)
+library(highcharter)
+
+source('utils.R')
+```
+
+
+```{r context="server"}
+#Initialize Maps 
+# output$conusMap     <- renderLeaflet({ basemap() })
+
+state_lst <- as.list(state.name)
+
+# output$countyMap <- renderLeaflet({ pop_map(pop) })
+
+```
+
+US water use {data-icon="fa-tint"}
+=====================================
+
+Inputs {.sidebar}
+-------------------------------------
+
+### Model Filters
+```{r}
+dateRangeInput("dateTS", label = "Date Range Input",
+               start = "1993-01-01",
+               end = "2018-12-31",
+               min = "1993-01-01",
+               max = "2018-12-31",
+               format = "yyyy mm dd",
+               weekstart = 1)
+uiOutput("stateSelector")
+
+```
+
+```{r context="server"}
+output$stateSelector <- renderUI({
+   selectInput("stateSearch", "Choose state:",
+               as.list(state_lst),
+               multiple= FALSE,
+               selectize = TRUE)
+})
+```
+
+### **Submit**
+```{r}
+shiny::actionButton("submitButton", label = "Enter", icon("search"))
+```
+
+Row
+-----------------------------------------------
+```{r}
+verbatimTextOutput("stateText")
+```
+
+```{r context="server"}
+stateName <- eventReactive(input$submitButton, {
+    paste0("state: ", input$stateSearch)
+  })
+
+output$stateText <- renderText({
+   stateName()
+  })
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
