@@ -1,8 +1,15 @@
 #
 #
-#
+
 # wu <- dataRetrieval::readNWISuse("California", "Los Angeles") %>%
-#   janitor::clean_names() %>%
+#   janitor::clean_names()
+#
+# lng <- wu %>%
+#   select(1:43) %>%
+#   mutate(across(7:43, as.numeric)) %>%
+#   replace(is.na(.), 0) %>%
+#   pivot_longer(7:27, names_to = ".value", names_sep = "(.)")
+#
 #     replace(is.na(.), 0)
 # pub <- wu %>% select(1:6,starts_with("public"))
 # dom <- wu %>% select(1:6,starts_with("domestic"))
@@ -16,20 +23,33 @@
 # irrig <- wu %>% select(1:6,starts_with("irrigation"))
 # waste <- wu %>% select(1:6,starts_with("wastewater"))
 #
-# stats <- wu %>% select(1:6)
-#
-# pub <- pub %>%
-#   mutate(across(7:27, as.numeric)) %>%
-#   replace(is.na(.), 0) %>%
-#   pivot_longer(7:27, names_to = "public", values_to = "withdrawals")
-#
-# dom <- dom %>%
-#   mutate(across(7:24, as.numeric)) %>%
-#   replace(is.na(.), 0) %>%
-#   pivot_longer(7:24, names_to = "domestic", values_to = "withdrawals")
-#
-# la_county <- water_use_data("California", "Los Angeles")
+# type = "domestic"
+# df <- dataRetrieval::readNWISuse("California", "Los Angeles") %>%
+#   janitor::clean_names()
 
+tidy_cols <- function(df, type){
+  sector <- df %>% select(1:6,starts_with(type))
+  sector <- sector %>%
+    mutate(across(7:last_col(), as.numeric)) %>%
+    replace(is.na(.), 0) %>%
+    pivot_longer(7:last_col(), names_to = paste0(names(sector[7])), values_to = "withdrawals")
+
+    colnames(sector)[7] <-  sub("_.*", "", colnames(sector)[7])
+    sector
+}
+
+
+make_graph <- function(df, type) {
+  sector <- tidy_cols(df, type)
+  sector <- sector %>% filter(withdrawals > 0)
+
+  highchart() %>%
+    hc_add_series(sector, type = "column", hcaes(x = type, y = withdrawals)) %>%
+    # hc_colors(c("red", "green", "grey", "blue", "orange")) %>%
+    hc_yAxis(title = list(text ="Mgal/day")) %>%
+    hc_xAxis(categories = sector$year) %>%
+    hc_chart(plotBorderWidth = 1, plotBorderColor = '#b4b4b4', height = NULL)
+}
 
 # USGS Water use data
 water_use_data <- function(state, county) {
