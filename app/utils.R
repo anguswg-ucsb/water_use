@@ -27,15 +27,25 @@
 # df <- dataRetrieval::readNWISuse("California", "Los Angeles") %>%
 #   janitor::clean_names()
 
-tidy_cols <- function(df, type){
-  sector <- df %>% select(1:6,starts_with(type))
+
+# tmp2 <- tmp1 %>%
+#   filter(str_detect(sector, "withdrawals"))
+
+
+tidy_sectors <- function(df){
+  sector <- df %>%
+    janitor::clean_names()
   sector <- sector %>%
     mutate(across(7:last_col(), as.numeric)) %>%
     replace(is.na(.), 0) %>%
-    pivot_longer(7:last_col(), names_to = paste0(names(sector[7])), values_to = "withdrawals")
-
-    colnames(sector)[7] <-  sub("_.*", "", colnames(sector)[7])
-    sector
+    pivot_longer(7:last_col(), names_to = "sector", values_to = "withdrawals")
+  # sector <- df %>% select(1:6,starts_with(type))
+  # sector <- sector %>%
+  #   mutate(across(7:last_col(), as.numeric)) %>%
+  #   replace(is.na(.), 0) %>%
+  #   pivot_longer(7:last_col(), names_to = paste0(names(sector[7])), values_to = "withdrawals")
+  #
+  #   colnames(sector)[7] <-  sub("_.*", "", colnames(sector)[7])
 }
 
 
