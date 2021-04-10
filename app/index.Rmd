@@ -1,11 +1,11 @@
 ---
-title: "Water use"
+title: "US water withdrawals"
 runtime: shiny
 output: 
   flexdashboard::flex_dashboard:
     navbar:
       - { icon: "fa-question-circle", href: "https://github.com/anguswg-ucsb/water_use", align: right }
-    theme: yeti
+    theme: cosmo
     orientation: rows
     source_code: embed
     vertical_layout: fill
@@ -25,7 +25,7 @@ library(dataRetrieval)
 
 library(DT)
 library(highcharter)
-
+library(RColorBrewer)
 source('utils.R')
 ```
 
@@ -33,7 +33,6 @@ source('utils.R')
 ```{r context="server"}
 #Initialize Maps 
 # output$conusMap     <- renderLeaflet({ basemap() })
-
 state_lst <- data.frame(state = state.name)
 county_lst <- USAboundaries::us_counties() %>% 
   sf::st_drop_geometry()
@@ -47,7 +46,7 @@ water_use <<- reactive({
 
 ```
 
-US water use {data-icon="fa-tint"}
+NWIS water use data {data-icon="fa-tint"}
 =====================================
 
 Inputs {.sidebar}
@@ -166,7 +165,7 @@ sector <- reactive({
 
 Row {.tabset}
 ----------------------------------------------
-### graph
+### Water withdrawals
 ```{r}
 highchartOutput("waterUseGraph")
 ```
@@ -175,32 +174,59 @@ highchartOutput("waterUseGraph")
 # county water use graph, reactive to state, county, and sector inputs
 waterUseData <- eventReactive(input$submitButton, {
      df <- tidy_sectors(water_use())
-     cols <- viridisLite::viridis(12)
-     cols <- substr(cols, 0, 7)
+     # cols <- viridisLite::viridis(12)
+     # cols <- substr(cols, 0, 7)
+     
       if(!is.null(input$sectorSearch)) {
           df <- df %>% filter(str_detect(sector, sector()))
+          num = length(unique(df$sector))
+          cols = colorRampPalette(brewer.pal(6, "Paired"))(num)
           highchart() %>%
               hc_add_series(df, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
-              hc_colors(cols)
+              hc_colors(cols) %>% 
+              hc_add_theme(hc_thm = hc_theme_smpl())
       } else {
         NULL
       }
 })
-     # else if(!is.null(input$usageSearch) && !is.null(input$sectorSearch)) {
-     #     df <- df %>% 
-     #       filter(str_detect(sector, usage())) %>% 
-     #       filter(str_detect(sector, sector()))
-     #    highchart() %>%
-     #        hc_add_series(df, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
-     #        hc_colors(cols)
-     #   }
+
 # Render water use plot after action button is clicked
 output$waterUseGraph <- renderHighchart({
         waterUseData()
       })
 ```
 
-### Table
+### Population
+```{r}
+highchartOutput("popGraph")
+```
+ 
+```{r context = "server"}
+popData <- eventReactive(input$submitButton, {
+         df <- dataRetrieval::readNWISuse(stateCd= state()$state_name[1], countyCd = "ALL") %>%
+            clean_names()
+     
+      if(!is.null(input$sectorSearch)) {
+          df <- get_pop_data(df)
+          num = length(unique(df$county_nm))
+          cols = colorRampPalette(brewer.pal(6, "Paired"))(num)
+          
+          highchart() %>%
+              hc_add_series(df, type = "column", hcaes(x = year, y = growth_rate, group = "county_nm")) %>%
+              hc_colors(cols) %>% 
+              hc_add_theme(hc_thm = hc_theme_smpl())
+      } else {
+        NULL
+      }
+})
+
+output$popGraph <- renderHighchart({
+        popData()
+      })
+```
+
+
+### Data table 
 ```{r}
 DTOutput("waterDT")
 ```

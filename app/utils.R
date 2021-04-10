@@ -1,17 +1,42 @@
 
-# df <- dataRetrieval::readNWISuse("CA", "Merced") %>%
+get_pop_data <- function(df){
+  county_pop <- df %>%
+    group_by(county_nm) %>%
+    mutate(population = total_population_total_population_of_area_in_thousands*1000,
+           county_cd = as.numeric(county_cd)) %>%
+    group_by(county_nm) %>%
+    arrange(population) %>%
+    mutate(growth_rate = (population - lag(population))/lag(population)) %>%
+    mutate(growth_rate = growth_rate*100) %>%
+    select(1:5, population, growth_rate)
+}
+
+# g <- get_pop_data(df)
+
+# ggplot2::ggplot(tst, aes(x = year, y = growth_rate)) +
+#   ggplot2::geom_line(aes(col = county_nm))
+# df <- dataRetrieval::readNWISuse("CA", "ALL") %>%
 #   janitor::clean_names()
-#
 # df2 <- tidy_sectors(df)
 
+# cols <- viridisLite::viridis(12)
+# cols <- substr(cols, 0, 7)
+
+# num = length(unique(tst$county_nm))
+# cols = colorRampPalette(brewer.pal(12, "Spectral"))(num)
+#
+# highchart() %>%
+#   hc_add_series(tst, type = "line", hcaes(x = year, y = growth_rate, group = "county_nm")) %>%
+#   hc_add_theme(hc_thm = hc_theme_darkunica())
+#   hc_colors(cols)
 
 tidy_sectors <- function(df){
   sector <- df %>%
-    janitor::clean_names()
+    janitor::clean_names() %>%
+    rename(population = total_population_total_population_of_area_in_thousands)
   sector <- df %>%
     mutate(across(7:last_col(), as.numeric)) %>%
     replace(is.na(.), 0) %>%
-
     mutate(
       public_supply_total_self_supplied_withdrawals_fresh_in_mgal_d =
             public_supply_total_self_supplied_withdrawals_fresh_in_mgal_d + domestic_total_self_supplied_withdrawals_fresh_in_mgal_d,
@@ -20,7 +45,7 @@ tidy_sectors <- function(df){
       public_supply_self_supplied_surface_water_withdrawals_fresh_in_mgal_d = public_supply_self_supplied_surface_water_withdrawals_fresh_in_mgal_d + domestic_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
       agriculture_self_supplied_surface_water_withdrawals_fresh_in_mgal_d = irrigation_total_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
       public_supply_self_supplied_groundwater_withdrawals_fresh_in_mgal_d = public_supply_self_supplied_groundwater_withdrawals_fresh_in_mgal_d + domestic_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
-      agriculture_self_supplied_groundwater_withdrawals_fresh_in_mgal_d = irrigation_total_self_supplied_groundwater_withdrawals_fresh_in_mgal_d) %>%
+      agriculture_self_supplied_groundwater_withdrawals_fresh_in_mgal_d = irrigation_total_self_supplied_groundwater_withdrawals_fresh_in_mgal_d ) %>% # population = population*1000
     select(-domestic_total_self_supplied_withdrawals_fresh_in_mgal_d,
            -domestic_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
            -domestic_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
@@ -38,7 +63,8 @@ tidy_sectors <- function(df){
            -livestock_stock_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
            -irrigation_total_total_self_supplied_withdrawals_fresh_in_mgal_d,
            -irrigation_total_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
-           -irrigation_total_self_supplied_groundwater_withdrawals_fresh_in_mgal_d) %>%
+           -irrigation_total_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
+           -total_population_total_population_of_area_in_thousands) %>%
     pivot_longer(7:last_col(), names_to = "sector", values_to = "withdrawals")
   #   colnames(sector)[7] <-  sub("_.*", "", colnames(sector)[7])
 }
