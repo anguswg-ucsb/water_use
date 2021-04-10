@@ -22,6 +22,8 @@ library(tidyr)
 library(janitor)
 library(stringr)
 library(dataRetrieval)
+library(USAboundaries)
+library(sf)
 
 library(DT)
 library(highcharter)
@@ -34,11 +36,11 @@ source('utils.R')
 #Initialize Maps 
 # output$conusMap     <- renderLeaflet({ basemap() })
 state_lst <- data.frame(state = state.name)
-county_lst <- USAboundaries::us_counties() %>% 
-  sf::st_drop_geometry()
+county_lst <- us_counties() %>% 
+  st_drop_geometry()
 
 water_use <<- reactive({
-    df <- dataRetrieval::readNWISuse(stateCd= state()$state_name[1], countyCd = county()) %>%
+    df <- readNWISuse(stateCd= state()$state_name[1], countyCd = county()) %>%
             clean_names()
 })
 
@@ -116,7 +118,7 @@ output$sectorSelect <- renderUI({
 
 ### 
 ```{r}
-shiny::actionButton("submitButton", label = "Enter", icon("search"))
+actionButton("submitButton", label = "Enter", icon("search"))
 ```
 
 
@@ -203,7 +205,7 @@ highchartOutput("popGraph")
  
 ```{r context = "server"}
 popData <- eventReactive(input$submitButton, {
-         df <- dataRetrieval::readNWISuse(stateCd= state()$state_name[1], countyCd = "ALL") %>%
+         df <- readNWISuse(stateCd= state()$state_name[1], countyCd = "ALL") %>%
             clean_names()
      
       if(!is.null(input$sectorSearch)) {
@@ -237,7 +239,7 @@ waterData <- eventReactive(input$submitButton, {
      df <- tidy_sectors(water_use())
      if(!is.null(input$sectorSearch)) {
        df <- df %>% filter(str_detect(sector, sector()))
-       DT::datatable(df, fillContainer = TRUE)
+       datatable(df, fillContainer = TRUE)
     } else {
         NULL
       }
