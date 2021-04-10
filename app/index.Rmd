@@ -5,7 +5,7 @@ output:
   flexdashboard::flex_dashboard:
     navbar:
       - { icon: "fa-question-circle", href: "https://github.com/anguswg-ucsb/water_use", align: right }
-    theme: flatly
+    theme: yeti
     orientation: rows
     source_code: embed
     vertical_layout: fill
@@ -38,12 +38,10 @@ state_lst <- data.frame(state = state.name)
 county_lst <- USAboundaries::us_counties() %>% 
   sf::st_drop_geometry()
 
-
 water_use <<- reactive({
     df <- dataRetrieval::readNWISuse(stateCd= state()$state_name[1], countyCd = county()) %>%
             clean_names()
 })
-
 
 # output$countyMap <- renderLeaflet({ pop_map(pop) })
 
@@ -57,46 +55,57 @@ Inputs {.sidebar}
 
 ### Model Filters
 ```{r}
-dateRangeInput("dateTS", label = "Date Range Input",
-               start = "1993-01-01",
-               end = "2018-12-31",
-               min = "1993-01-01",
-               max = "2018-12-31",
-               format = "yyyy mm dd",
-               weekstart = 1)
+# dateRangeInput("dateTS", label = "Date Range Input",
+#                start = "1993-01-01",
+#                end = "2018-12-31",
+#                min = "1993-01-01",
+#                max = "2018-12-31",
+#                format = "yyyy mm dd",
+#                weekstart = 1)
+
+# state, county, usage and sector UI outputs
 uiOutput("stateSelect")
 uiOutput("countySelect")
-uiOutput("usageSelect")
+# uiOutput("usageSelect")
 uiOutput("sectorSelect")
 
 
 ```
 
 ```{r context="server"}
-sector_lst <- data.frame(source = c("public","domestic","commericial","industrial",
-                "thermoelectric", "livestock","mining",
-                "wastewater", "irrigation", "hydro","aqua", "geothermal", "fossil_fuel"))
-usage <- data.frame(source = c("consumptive", "withdrawals"))
+# sector_lst <- data.frame(source = c("consumptive", "withdrawals", "public",
+#                                     "domestic","commericial","industrial", "mining",
+#                                     "irrigation_total","irrigation_crop", "irrigation_golf",
+#                                     "livestock", "aquaculture", "total_thermoelectric",
+#                                     "fossil_fuel", "nuclear", "hydro",
+#                                     "geothermal", "fossil_fuel", "wastewater"))
+sector_lst <- data.frame(source = c("_total_self_supplied_withdrawals_fresh_", "surface_water_withdrawals_fresh", "groundwater_withdrawals_fresh"))
 
+# usage <- data.frame(source = c("consumptive", "withdrawals"))
 
+# State input 
 output$stateSelect <- renderUI({
    selectInput("stateSearch", "Choose state:",
                as.list(unique(county_lst$state_name)),
                multiple= FALSE,
                selectize = TRUE)
 })
+
+# County input
 output$countySelect <- renderUI({
    selectInput("countySearch", "Choose county:",
                choices = NULL,
                multiple= FALSE,
                selectize = TRUE)
 })
-output$usageSelect <- renderUI({
-   selectInput("usageSearch", "Sink:",
-               choices = c("consumptive", "withdrawals"),
-               multiple= FALSE,
-               selectize = TRUE)
-})
+# Usage input
+# output$usageSelect <- renderUI({
+#    selectInput("usageSearch", "Sink:",
+#                choices = c("consumptive", "withdrawals"),
+#                multiple= FALSE,
+#                selectize = TRUE)
+# })
+# Sector input
 output$sectorSelect <- renderUI({
    selectInput("sectorSearch", "Choose sector:",
                choices = as.list(sector_lst),
@@ -106,17 +115,14 @@ output$sectorSelect <- renderUI({
 
 ```
 
-### **Submit**
+### 
 ```{r}
 shiny::actionButton("submitButton", label = "Enter", icon("search"))
 ```
 
-Row
------------------------------------------------
+
 ```{r context="server"}
-# state <- eventReactive(input$submitButton, {
-#     filter(county_lst, state_name == input$stateSearch)
-#   })
+# Make state input a reactive value
 state <- reactive({
   if(is.null(input$stateSearch)){
     NULL
@@ -124,146 +130,104 @@ state <- reactive({
     filter(county_lst, state_name == input$stateSearch)
   }
   })
-
-usage <- reactive({
-  input$usageSearch
-})
-output$usageText <- renderPrint({
-  usage()
-  })
+# output$stateText <- renderPrint({
+#   state()
+#   })
+# usage <- reactive({
+#   input$usageSearch
+# })
+# output$usageText <- renderPrint({
+#   usage()
+#   })
+# When state input changes, county choices update to respective state
 observeEvent(state(), {
   choices <- state()$name
   updateSelectInput(session, inputId = "countySearch", choices = choices)
 
 })
-output$stateText <- renderPrint({
-  state()
-  })
 
+# Make county input a reactive value
 county <- reactive({
   input$countySearch
 })
 
+# Reactivity test for county input
 output$countyText <- renderPrint({
    county()
   })
 
+# Make sector input a reactive value
+sector <- reactive({
+  input$sectorSearch
+})
+```
+
+
+
+Row {.tabset}
+----------------------------------------------
+### graph
+```{r}
+highchartOutput("waterUseGraph")
+```
+
+```{r context = "server"}
+# county water use graph, reactive to state, county, and sector inputs
+waterUseData <- eventReactive(input$submitButton, {
+     df <- tidy_sectors(water_use())
+     cols <- viridisLite::viridis(12)
+     cols <- substr(cols, 0, 7)
+      if(!is.null(input$sectorSearch)) {
+          df <- df %>% filter(str_detect(sector, sector()))
+          highchart() %>%
+              hc_add_series(df, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
+              hc_colors(cols)
+      } else {
+        NULL
+      }
+})
+     # else if(!is.null(input$usageSearch) && !is.null(input$sectorSearch)) {
+     #     df <- df %>% 
+     #       filter(str_detect(sector, usage())) %>% 
+     #       filter(str_detect(sector, sector()))
+     #    highchart() %>%
+     #        hc_add_series(df, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
+     #        hc_colors(cols)
+     #   }
+# Render water use plot after action button is clicked
+output$waterUseGraph <- renderHighchart({
+        waterUseData()
+      })
+```
+
+### Table
+```{r}
+DTOutput("waterDT")
+```
+
+``` {r context = "server"}
+# county water use data table, reactive to state, county, and sector inputs
 waterData <- eventReactive(input$submitButton, {
      df <- tidy_sectors(water_use())
-     if(!is.null(input$usageSearch) && is.null(input$sectorSearch)) {
-       df <- df %>% filter(str_detect(sector, usage()))
+     if(!is.null(input$sectorSearch)) {
+       df <- df %>% filter(str_detect(sector, sector()))
        DT::datatable(df, fillContainer = TRUE)
-     } else if(!is.null(input$usageSearch) && !is.null(input$sectorSearch)) {
-       df <- df %>%
-         filter(str_detect(sector, usage())) %>%
-          filter(str_detect(sector, sector()))
-       DT::datatable(df, fillContainer = TRUE)
-     }
-})
-
+    } else {
+        NULL
+      }
+}) 
+     # else if(!is.null(input$usageSearch) && !is.null(input$sectorSearch)) {
+     #   df <- df %>%
+     #     filter(str_detect(sector, usage())) %>%
+     #      filter(str_detect(sector, sector()))
+     #   DT::datatable(df, fillContainer = TRUE)
+     # }
+# Render water use data table after action button is clicked
 output$waterDT <- renderDT({
   waterData()
 })
 
-#     janitor::clean_names()
-#   tbl <- tidy_cols(df, sectorName())
-#   DT::datatable(tbl, fillContainer = TRUE)
-# county <- eventReactive(input$submitButton, {
-#     input$countySearch
-#   })
-# county <- reactive({
-#     # input$countySearch
-#   req(input$customername)
-#   filter(state(), name == input$countySearch)
-#   })
-# output$countyText <- renderPrint({
-#    county()
-#   })
-
-# sectorName <- eventReactive(input$submitButton, {
-#     s <- filter(sector_lst, source == input$sectorSearch)
-#     s[1,]
-# 
-# 
-#   })
-sector <- reactive({
-  input$sectorSearch
-})
-output$sectorText <- renderPrint({
-  sector()
-})
 ```
-
-
-### Table
-```{r}
-
-# verbatimTextOutput("countyText")
-# verbatimTextOutput("stateText")
-
-# verbatimTextOutput("sectorText")
-
-DTOutput("waterDT")
-```
-
-```{r context = "server"}
-# output$tableWaterUse <- renderDT({
-# 
-#   df <- dataRetrieval::readNWISuse(input$stateSearch, county()) %>%
-#     janitor::clean_names()
-#   tbl <- tidy_cols(df, sectorName())
-#   DT::datatable(tbl, fillContainer = TRUE)
-# })
-```
-
-Row
-----------------------------------------------
-### graph
-```{r}
-# highchartOutput("waterUseGraph")
-verbatimTextOutput("countyText")
-
-```
-
-### state
-```{r}
-verbatimTextOutput("stateText")
-```
-
-### Usage
-```{r}
-verbatimTextOutput("usageText")
-```
-
-```{r context = "server"}
-# county water use data/plot, reactive to input of date button
-# countyWaterUse <- eventReactive(input$submitButton, {
-#     
-#       df <- dataRetrieval::readNWISuse(input$stateSearch, county()) %>%
-#             janitor::clean_names()
-# 
-#         make_graph(df, sectorName())
-#   
-# })
-# # Render water use plot after action button is clicked
-# output$waterUseGraph <- renderHighchart({
-#         countyWaterUse()
-
-#       })
-```
-Row
---------------------------------------
-```{r}
-verbatimTextOutput('sectorText')
-```
-
-
-
-
-
-
-
-
 
 
 

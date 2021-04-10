@@ -1,0 +1,12 @@
+name: WaterUse
+title: WaterUse
+username:
+account: angus-watters
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3939262
+bundleId: 4452647
+url: https://angus-watters.shinyapps.io/WaterUse/
+when: 1618011567.38484
+asMultiple: FALSE
+asStatic: FALSE

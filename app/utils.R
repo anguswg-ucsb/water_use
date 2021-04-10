@@ -1,63 +1,57 @@
-#
-#
 
-# wu <- dataRetrieval::readNWISuse("California", "Los Angeles") %>%
+# df <- dataRetrieval::readNWISuse("CA", "Merced") %>%
 #   janitor::clean_names()
 #
-# lng <- wu %>%
-#   select(1:43) %>%
-#   mutate(across(7:43, as.numeric)) %>%
-#   replace(is.na(.), 0) %>%
-#   pivot_longer(7:27, names_to = ".value", names_sep = "(.)")
-#
-#     replace(is.na(.), 0)
-# pub <- wu %>% select(1:6,starts_with("public"))
-# dom <- wu %>% select(1:6,starts_with("domestic"))
-# comm <- wu %>% select(1:6,starts_with("commericial"))
-# ind <- wu %>% select(1:6,starts_with("industrial"))
-# thermo <- wu %>% select(1:6,contains("thermoelectric"))
-# mine <- wu %>% select(1:6,starts_with("mining"))
-# livestock <- wu %>% select(1:6,starts_with("livestock"))
-# aqua <- wu %>% select(1:6,starts_with("aqua"))
-# hydro <- wu %>% select(1:6,starts_with("hydro"))
-# irrig <- wu %>% select(1:6,starts_with("irrigation"))
-# waste <- wu %>% select(1:6,starts_with("wastewater"))
-#
-# type = "domestic"
-# df <- dataRetrieval::readNWISuse("California", "Los Angeles") %>%
-#   janitor::clean_names()
-
-
-# tmp2 <- tmp1 %>%
-#   filter(str_detect(sector, "withdrawals"))
+# df2 <- tidy_sectors(df)
 
 
 tidy_sectors <- function(df){
   sector <- df %>%
     janitor::clean_names()
-  sector <- sector %>%
+  sector <- df %>%
     mutate(across(7:last_col(), as.numeric)) %>%
     replace(is.na(.), 0) %>%
+
+    mutate(
+      public_supply_total_self_supplied_withdrawals_fresh_in_mgal_d =
+            public_supply_total_self_supplied_withdrawals_fresh_in_mgal_d + domestic_total_self_supplied_withdrawals_fresh_in_mgal_d,
+      agriculture_total_self_supplied_withdrawals_fresh_in_mgal_d =
+            irrigation_total_total_self_supplied_withdrawals_fresh_in_mgal_d,
+      public_supply_self_supplied_surface_water_withdrawals_fresh_in_mgal_d = public_supply_self_supplied_surface_water_withdrawals_fresh_in_mgal_d + domestic_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+      agriculture_self_supplied_surface_water_withdrawals_fresh_in_mgal_d = irrigation_total_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+      public_supply_self_supplied_groundwater_withdrawals_fresh_in_mgal_d = public_supply_self_supplied_groundwater_withdrawals_fresh_in_mgal_d + domestic_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
+      agriculture_self_supplied_groundwater_withdrawals_fresh_in_mgal_d = irrigation_total_self_supplied_groundwater_withdrawals_fresh_in_mgal_d) %>%
+    select(-domestic_total_self_supplied_withdrawals_fresh_in_mgal_d,
+           -domestic_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+           -domestic_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
+              -aquaculture_total_self_supplied_withdrawals_fresh_in_mgal_d,
+           -aquaculture_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+           -aquaculture_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
+              -livestock_total_self_supplied_withdrawals_fresh_in_mgal_d,
+           -livestock_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
+           -livestock_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+           -livestock_animal_specialties_total_self_supplied_withdrawals_fresh_in_mgal_d,
+           -livestock_stock_total_self_supplied_withdrawals_fresh_in_mgal_d,
+           -livestock_animal_specialties_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
+           -livestock_stock_self_supplied_groundwater_withdrawals_fresh_in_mgal_d,
+           -livestock_animal_specialties_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+           -livestock_stock_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+           -irrigation_total_total_self_supplied_withdrawals_fresh_in_mgal_d,
+           -irrigation_total_self_supplied_surface_water_withdrawals_fresh_in_mgal_d,
+           -irrigation_total_self_supplied_groundwater_withdrawals_fresh_in_mgal_d) %>%
     pivot_longer(7:last_col(), names_to = "sector", values_to = "withdrawals")
-  # sector <- df %>% select(1:6,starts_with(type))
-  # sector <- sector %>%
-  #   mutate(across(7:last_col(), as.numeric)) %>%
-  #   replace(is.na(.), 0) %>%
-  #   pivot_longer(7:last_col(), names_to = paste0(names(sector[7])), values_to = "withdrawals")
-  #
   #   colnames(sector)[7] <-  sub("_.*", "", colnames(sector)[7])
 }
 
-
-make_graph <- function(df, type) {
-  sector <- tidy_cols(df, type)
-  sector <- sector %>% filter(withdrawals > 0)
-
+make_graph <- function(df) {
+  cols <- viridisLite::viridis(15)
+  cols <- substr(cols, 0, 7)
   highchart() %>%
-    hc_add_series(sector, type = "column", hcaes(x = type, y = withdrawals)) %>%
+    hc_add_series(df2, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
+    hc_colors(cols)
     # hc_colors(c("red", "green", "grey", "blue", "orange")) %>%
     hc_yAxis(title = list(text ="Mgal/day")) %>%
-    hc_xAxis(categories = sector$year) %>%
+    # hc_xAxis(categories = df$year) %>%
     hc_chart(plotBorderWidth = 1, plotBorderColor = '#b4b4b4', height = NULL)
 }
 
