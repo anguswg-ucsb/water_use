@@ -184,7 +184,7 @@ waterUseData <- eventReactive(input$submitButton, {
           highchart() %>%
               hc_add_series(df, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
               hc_colors(cols) %>% 
-              hc_add_theme(hc_thm = hc_theme_smpl())
+              hc_add_theme(hc_thm = hc_theme_elementary())
       } else {
         NULL
       }
@@ -214,7 +214,7 @@ popData <- eventReactive(input$submitButton, {
           highchart() %>%
               hc_add_series(df, type = "column", hcaes(x = year, y = growth_rate, group = "county_nm")) %>%
               hc_colors(cols) %>% 
-              hc_add_theme(hc_thm = hc_theme_smpl())
+              hc_add_theme(hc_thm = hc_theme_elementary())
       } else {
         NULL
       }
