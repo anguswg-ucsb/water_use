@@ -80,7 +80,7 @@ uiOutput("sectorSelect")
 #                                     "livestock", "aquaculture", "total_thermoelectric",
 #                                     "fossil_fuel", "nuclear", "hydro",
 #                                     "geothermal", "fossil_fuel", "wastewater"))
-sector_lst <- data.frame(source = c("_total_self_supplied_withdrawals_fresh_", "surface_water_withdrawals_fresh", "groundwater_withdrawals_fresh"))
+sector_lst <- data.frame(source = c("Total Self Supplied Withdrawals Fresh", "Surface Water Withdrawals Fresh", "Groundwater Withdrawals Fresh"))
 
 # usage <- data.frame(source = c("consumptive", "withdrawals"))
 
@@ -181,6 +181,11 @@ waterUseData <- eventReactive(input$submitButton, {
      
       if(!is.null(input$sectorSearch)) {
           df <- df %>% filter(str_detect(sector, sector()))
+          df$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal d", "", df$sector)
+          df$sector <-  gsub(" Surface Water Withdrawals Fresh in Mgal d", "", df$sector)
+          df$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal", "", df$sector)
+          df$sector <-  gsub(" Self Supplied Groundwater Withdrawals Fresh in Mgal d", "", df$sector)
+          df$sector <-  gsub(" Total Self Supplied Withdrawals Fresh in Mgal d", "", df$sector)
           num = length(unique(df$sector))
           cols = colorRampPalette(brewer.pal(6, "Paired"))(num)
           highchart() %>%
@@ -209,14 +214,33 @@ popData <- eventReactive(input$submitButton, {
             clean_names()
      
       if(!is.null(input$sectorSearch)) {
-          df <- get_pop_data(df)
+          state_pop <- get_pop_data(df)
+          
+          county_pop <- state_pop %>%
+              filter(county_nm == paste0(county(), " County"))
+          state_pop <- state_pop %>%
+              group_by(year) %>%
+              summarize(total_pop = sum(population), avg_growth = mean(growth_rate, na.rm = TRUE))
+
           num = length(unique(df$county_nm))
           cols = colorRampPalette(brewer.pal(6, "Paired"))(num)
           
           highchart() %>%
-              hc_add_series(df, type = "column", hcaes(x = year, y = growth_rate, group = "county_nm")) %>%
-              hc_colors(cols) %>% 
-              hc_add_theme(hc_thm = hc_theme_elementary())
+              hc_add_theme(hc_thm = hc_theme_flat2()) %>%
+              hc_yAxis_multiples(list(title = list(text = "Population"),
+                                      max = max(county_pop$population)*1.2,
+                                      showFirstLabel = TRUE,
+                                      showLastLabel = TRUE,
+                                      opposite = FALSE),
+                                 list(title = list(text = "Growth Rate %"),
+                                      max = 20,
+                                      showLastLabel=FALSE,
+                                      opposite = TRUE)) %>%
+              hc_add_series(state_pop, name = "State Growth %", type = "column", hcaes(x = year, y = avg_growth), yAxis = 1) %>%
+              hc_add_series(county_pop, name = "County Growth %", type = "column", hcaes(x = year, y = growth_rate), yAxis = 1) %>%
+              hc_add_series(county_pop, name = "County population", type = "line", hcaes(x = year, y = population), yAxis = 0) %>%
+              hc_colors(c("darkcyan", "lightblue", "darkred")) %>% 
+              hc_chart(plotBorderWidth = 1, plotBorderColor = '#b4b4b4', height = NULL)
       } else {
         NULL
       }
