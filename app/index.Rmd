@@ -23,6 +23,7 @@ library(janitor)
 library(stringr)
 library(dataRetrieval)
 library(USAboundaries)
+library(USAboundariesData)
 library(sf)
 
 library(DT)
@@ -36,7 +37,7 @@ source('utils.R')
 #Initialize Maps 
 # output$conusMap     <- renderLeaflet({ basemap() })
 state_lst <- data.frame(state = state.name)
-county_lst <- us_counties() %>% 
+county_lst <- USAboundaries::us_counties() %>% 
   st_drop_geometry()
 
 water_use <<- reactive({
@@ -87,7 +88,8 @@ sector_lst <- data.frame(source = c("Total Self Supplied Withdrawals Fresh", "Su
 # State input 
 output$stateSelect <- renderUI({
    selectInput("stateSearch", "Choose state:",
-               as.list(unique(county_lst$state_name)),
+               as.list(state_lst$state),
+               # as.list(unique(county_lst$state_name)),
                multiple= FALSE,
                selectize = TRUE)
 })
@@ -142,7 +144,7 @@ state <- reactive({
 #   })
 # When state input changes, county choices update to respective state
 observeEvent(state(), {
-  choices <- state()$name
+  choices <- sort(state()$name)
   updateSelectInput(session, inputId = "countySearch", choices = choices)
 
 })

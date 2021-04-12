@@ -154,7 +154,7 @@ water_use_data <- function(state, county) {
   # water_use <- group_by(water_use, Sector, YEAR)
 }
 
-# pop_all <- dataRetrieval::readNWISuse("AZ", "ALL")
+# pop_all <- dataRetrieval::readNWISuse("AZ", "Maricopa")
 #
 # pop_all <- get_pop_data(pop_all)
 #
@@ -165,7 +165,7 @@ water_use_data <- function(state, county) {
 #   summarize(total_pop = sum(population), avg_growth = mean(growth_rate, na.rm = TRUE))
 #
 # df2 <- tidy_sectors(df)
-#
+
 # pop <- get_pop_data(df)
 # num = length(unique(pop$county_nm))
 # cols = colorRampPalette(brewer.pal(6, "Paired"))(num)
@@ -191,20 +191,20 @@ water_use_data <- function(state, county) {
 #   hc_chart(plotBorderWidth = 1, plotBorderColor = '#b4b4b4', height = NULL)
 #
 #
-#
-# df <- dataRetrieval::readNWISuse("CA", "Los Angeles")
-#
-# df2 <- tidy_sectors(df)
 
-#
-# df3 <- df2 %>% filter(str_detect(sector, "Total Self Supplied Withdrawals Fresh"))
-#
-# df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
-# df3$sector <-  gsub(" Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
-# df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal", "", df3$sector)
-#
-# df3$sector <-  gsub(" Self Supplied Groundwater Withdrawals Fresh in Mgal d", "", df3$sector)
-# df3$sector <-  gsub(" Total Self Supplied Withdrawals Fresh in Mgal d", "", df3$sector)
+df <- dataRetrieval::readNWISuse("CA", "Los Angeles")
+
+df2 <- tidy_sectors(df)
+
+
+df3 <- df2 %>% filter(str_detect(sector, "Thermoelectric Power Total Self Supplied Withdrawals"))
+
+df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
+df3$sector <-  gsub(" Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
+df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal", "", df3$sector)
+
+df3$sector <-  gsub(" Self Supplied Groundwater Withdrawals Fresh in Mgal d", "", df3$sector)
+df3$sector <-  gsub(" Total Self Supplied Withdrawals Fresh in Mgal d", "", df3$sector)
 
 
 # num = length(unique(df2$sector))
