@@ -192,19 +192,19 @@ water_use_data <- function(state, county) {
 #
 #
 
-df <- dataRetrieval::readNWISuse("CA", "Los Angeles")
-
-df2 <- tidy_sectors(df)
-
-
-df3 <- df2 %>% filter(str_detect(sector, "Thermoelectric Power Total Self Supplied Withdrawals"))
-
-df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
-df3$sector <-  gsub(" Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
-df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal", "", df3$sector)
-
-df3$sector <-  gsub(" Self Supplied Groundwater Withdrawals Fresh in Mgal d", "", df3$sector)
-df3$sector <-  gsub(" Total Self Supplied Withdrawals Fresh in Mgal d", "", df3$sector)
+# df <- dataRetrieval::readNWISuse("CA", "Los Angeles")
+#
+# df2 <- tidy_sectors(df)
+#
+#
+# df3 <- df2 %>% filter(str_detect(sector, "Thermoelectric Power Total Self Supplied Withdrawals"))
+#
+# df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
+# df3$sector <-  gsub(" Surface Water Withdrawals Fresh in Mgal d", "", df3$sector)
+# df3$sector <-  gsub(" Self Supplied Surface Water Withdrawals Fresh in Mgal", "", df3$sector)
+#
+# df3$sector <-  gsub(" Self Supplied Groundwater Withdrawals Fresh in Mgal d", "", df3$sector)
+# df3$sector <-  gsub(" Total Self Supplied Withdrawals Fresh in Mgal d", "", df3$sector)
 
 
 # num = length(unique(df2$sector))

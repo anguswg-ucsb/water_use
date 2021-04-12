@@ -43,7 +43,8 @@ water_use <<- reactive({
             clean_names()
 })
 
-# Maps 
+
+
 # output$conusMap     <- renderLeaflet({ basemap() })
 # output$countyMap <- renderLeaflet({ pop_map(pop) })
 ```
@@ -172,7 +173,8 @@ waterUseData <- eventReactive(input$submitButton, {
           highchart() %>%
               hc_add_series(df, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
               hc_colors(cols) %>% 
-              hc_add_theme(hc_thm = hc_theme_elementary())
+              hc_add_theme(hc_thm = hc_theme_elementary()) %>%
+              hc_chart(plotBorderWidth = 1, plotBorderColor = '#b4b4b4', height = NULL)
       } else {
         NULL
       }
