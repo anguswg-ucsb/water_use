@@ -1,5 +1,5 @@
 ---
-title: "US water withdrawals"
+title: "Water use"
 runtime: shiny
 output: 
   flexdashboard::flex_dashboard:
@@ -34,8 +34,6 @@ source('utils.R')
 
 
 ```{r context="server"}
-#Initialize Maps 
-# output$conusMap     <- renderLeaflet({ basemap() })
 state_lst <- data.frame(state = state.name)
 county_lst <- USAboundaries::us_counties() %>% 
   st_drop_geometry()
@@ -45,11 +43,12 @@ water_use <<- reactive({
             clean_names()
 })
 
+# Maps 
+# output$conusMap     <- renderLeaflet({ basemap() })
 # output$countyMap <- renderLeaflet({ pop_map(pop) })
-
 ```
 
-NWIS water use data {data-icon="fa-tint"}
+NWIS data {data-icon="fa-tint"}
 =====================================
 
 Inputs {.sidebar}
@@ -57,39 +56,21 @@ Inputs {.sidebar}
 
 ### Model Filters
 ```{r}
-# dateRangeInput("dateTS", label = "Date Range Input",
-#                start = "1993-01-01",
-#                end = "2018-12-31",
-#                min = "1993-01-01",
-#                max = "2018-12-31",
-#                format = "yyyy mm dd",
-#                weekstart = 1)
-
 # state, county, usage and sector UI outputs
 uiOutput("stateSelect")
 uiOutput("countySelect")
-# uiOutput("usageSelect")
 uiOutput("sectorSelect")
-
-
+# uiOutput("usageSelect")
 ```
 
 ```{r context="server"}
-# sector_lst <- data.frame(source = c("consumptive", "withdrawals", "public",
-#                                     "domestic","commericial","industrial", "mining",
-#                                     "irrigation_total","irrigation_crop", "irrigation_golf",
-#                                     "livestock", "aquaculture", "total_thermoelectric",
-#                                     "fossil_fuel", "nuclear", "hydro",
-#                                     "geothermal", "fossil_fuel", "wastewater"))
-sector_lst <- data.frame(source = c("Total Self Supplied Withdrawals Fresh", "Surface Water Withdrawals Fresh", "Groundwater Withdrawals Fresh"))
 
-# usage <- data.frame(source = c("consumptive", "withdrawals"))
+sector_lst <- data.frame(source = c("Total Self Supplied Withdrawals Fresh", "Surface Water Withdrawals Fresh", "Groundwater Withdrawals Fresh"))
 
 # State input 
 output$stateSelect <- renderUI({
    selectInput("stateSearch", "Choose state:",
                as.list(state_lst$state),
-               # as.list(unique(county_lst$state_name)),
                multiple= FALSE,
                selectize = TRUE)
 })
@@ -101,13 +82,7 @@ output$countySelect <- renderUI({
                multiple= FALSE,
                selectize = TRUE)
 })
-# Usage input
-# output$usageSelect <- renderUI({
-#    selectInput("usageSearch", "Sink:",
-#                choices = c("consumptive", "withdrawals"),
-#                multiple= FALSE,
-#                selectize = TRUE)
-# })
+
 # Sector input
 output$sectorSelect <- renderUI({
    selectInput("sectorSearch", "Choose sector:",
@@ -116,6 +91,13 @@ output$sectorSelect <- renderUI({
                selectize = TRUE)
 })
 
+# Usage input
+# output$usageSelect <- renderUI({
+#    selectInput("usageSearch", "Sink:",
+#                choices = c("consumptive", "withdrawals"),
+#                multiple= FALSE,
+#                selectize = TRUE)
+# })
 ```
 
 ### 
@@ -133,15 +115,7 @@ state <- reactive({
     filter(county_lst, state_name == input$stateSearch)
   }
   })
-# output$stateText <- renderPrint({
-#   state()
-#   })
-# usage <- reactive({
-#   input$usageSearch
-# })
-# output$usageText <- renderPrint({
-#   usage()
-#   })
+
 # When state input changes, county choices update to respective state
 observeEvent(state(), {
   choices <- sort(state()$name)
@@ -163,9 +137,14 @@ output$countyText <- renderPrint({
 sector <- reactive({
   input$sectorSearch
 })
+
+# usage <- reactive({
+#   input$usageSearch
+# })
+# output$usageText <- renderPrint({
+#   usage()
+#   })
 ```
-
-
 
 Row {.tabset}
 ----------------------------------------------
@@ -211,6 +190,7 @@ highchartOutput("popGraph")
 ```
  
 ```{r context = "server"}
+# yearly population totals and growth rate
 popData <- eventReactive(input$submitButton, {
          df <- readNWISuse(stateCd= state()$state_name[1], countyCd = "ALL") %>%
             clean_names()
@@ -248,6 +228,7 @@ popData <- eventReactive(input$submitButton, {
       }
 })
 
+# population totals and growth rate highchart
 output$popGraph <- renderHighchart({
         popData()
       })
@@ -260,22 +241,20 @@ DTOutput("waterDT")
 ```
 
 ``` {r context = "server"}
+
 # county water use data table, reactive to state, county, and sector inputs
 waterData <- eventReactive(input$submitButton, {
      df <- tidy_sectors(water_use())
      if(!is.null(input$sectorSearch)) {
-       df <- df %>% filter(str_detect(sector, sector()))
+       df <- df %>% 
+         filter(str_detect(sector, sector())) %>% 
+         select(state = state_name, county = county_nm, year, population, sector, withdrawals)
        datatable(df, fillContainer = TRUE)
     } else {
         NULL
       }
 }) 
-     # else if(!is.null(input$usageSearch) && !is.null(input$sectorSearch)) {
-     #   df <- df %>%
-     #     filter(str_detect(sector, usage())) %>%
-     #      filter(str_detect(sector, sector()))
-     #   DT::datatable(df, fillContainer = TRUE)
-     # }
+
 # Render water use data table after action button is clicked
 output$waterDT <- renderDT({
   waterData()
