@@ -55,7 +55,7 @@ NWIS data {data-icon="fa-tint"}
 Inputs {.sidebar}
 -------------------------------------
 
-### Model Filters
+### Filters
 ```{r}
 # state, county, usage and sector UI outputs
 uiOutput("stateSelect")
@@ -174,7 +174,7 @@ waterUseData <- eventReactive(input$submitButton, {
               hc_add_series(df, type = "column", hcaes(x = year, y = withdrawals, group = "sector")) %>%
               hc_colors(cols) %>% 
               hc_add_theme(hc_thm = hc_theme_elementary()) %>%
-              hc_chart(plotBorderWidth = 1, plotBorderColor = '#b4b4b4', height = NULL)
+              hc_chart(plotBorderWidth = 0.5, plotBorderColor = '#b4b4b4', height = NULL)
       } else {
         NULL
       }
@@ -224,7 +224,7 @@ popData <- eventReactive(input$submitButton, {
               hc_add_series(county_pop, name = "County Growth %", type = "column", hcaes(x = year, y = growth_rate), yAxis = 1) %>%
               hc_add_series(county_pop, name = "County population", type = "line", hcaes(x = year, y = population), yAxis = 0) %>%
               hc_colors(c("darkcyan", "lightblue", "darkred")) %>% 
-              hc_chart(plotBorderWidth = 1, plotBorderColor = '#b4b4b4', height = NULL)
+              hc_chart(plotBorderWidth = 0.5, plotBorderColor = '#b4b4b4', height = NULL)
       } else {
         NULL
       }
